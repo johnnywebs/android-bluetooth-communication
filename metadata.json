@@ -1,0 +1,6 @@
+{
+  "name": "Orbit Intercom",
+  "description": "Offline multi-user Bluetooth intercom with PIN protection, hands-free VOX, and low-latency audio streaming.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
