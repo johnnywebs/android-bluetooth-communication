@@ -58,7 +58,9 @@ data class DiscoveredHost(
     val deviceName: String,
     val deviceAddress: String,
     val roomName: String = "",
-    val rssi: Int = 0
+    val rssi: Int = 0,
+    val isBle: Boolean = true,
+    val lastSeenMs: Long = System.currentTimeMillis()
 )
 
 data class AudioSettings(

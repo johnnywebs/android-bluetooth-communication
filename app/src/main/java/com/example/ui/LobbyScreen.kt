@@ -1,5 +1,9 @@
 package com.example.ui
 
+import android.bluetooth.BluetoothAdapter
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.BluetoothDisabled
 import androidx.compose.material.icons.filled.BluetoothSearching
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Edit
@@ -80,6 +85,9 @@ fun LobbyScreen(
     var showAudioSettings by remember { mutableStateOf(false) }
     var isEditingCallsign by remember { mutableStateOf(false) }
     var callsignInput by remember { mutableStateOf(uiState.callsign) }
+    val enableBtLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { }
 
     Scaffold(
         topBar = {
@@ -155,6 +163,50 @@ fun LobbyScreen(
             contentPadding = PaddingValues(top = 12.dp, bottom = 40.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // 0. Bluetooth Off Warning
+            if (!uiState.isBluetoothEnabled) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.BluetoothDisabled,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                                Text(
+                                    text = "Bluetooth is turned off. Turn it on to host or join rooms.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
+                            Button(
+                                onClick = {
+                                    enableBtLauncher.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
+                                },
+                                modifier = Modifier.padding(start = 8.dp)
+                            ) {
+                                Text("Enable")
+                            }
+                        }
+                    }
+                }
+            }
+
             // 1. Callsign Card
             item {
                 Card(
@@ -435,15 +487,26 @@ fun LobbyScreen(
                                 modifier = Modifier.size(36.dp)
                             )
                             Text(
-                                text = "No active intercom rooms detected nearby",
+                                text = if (uiState.isScanning) {
+                                    "Scanning for Orbit Intercom rooms nearby..."
+                                } else {
+                                    "No Orbit Intercom rooms detected nearby"
+                                },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                            Text(
+                                text = "Only rooms hosted by Orbit Intercom are shown here.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
+                            )
                             Button(
-                                onClick = { viewModel.startScanning() },
+                                onClick = {
+                                    if (uiState.isScanning) viewModel.stopScanning() else viewModel.startScanning()
+                                },
                                 modifier = Modifier.padding(top = 8.dp)
                             ) {
-                                Text("Scan for Bluetooth Rooms")
+                                Text(if (uiState.isScanning) "Stop Scan" else "Scan for Intercom Rooms")
                             }
                         }
                     }
@@ -555,8 +618,13 @@ fun DiscoveredHostCard(
                             modifier = Modifier.size(14.dp)
                         )
                     }
+                    val signalLabel = when {
+                        host.rssi >= -60 -> "Strong signal"
+                        host.rssi >= -78 -> "Good signal"
+                        else -> "Weak signal"
+                    }
                     Text(
-                        text = "Host: ${host.deviceName}",
+                        text = "Host: ${host.deviceName} • $signalLabel",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

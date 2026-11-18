@@ -133,6 +133,13 @@ class IntercomViewModel(application: Application) : AndroidViewModel(application
             }
         }
 
+        // Sync Bluetooth radio state
+        viewModelScope.launch {
+            bluetoothIntercom.isBluetoothEnabled.collectLatest { enabled ->
+                _uiState.update { it.copy(isBluetoothEnabled = enabled) }
+            }
+        }
+
         // Sync error messages
         viewModelScope.launch {
             bluetoothIntercom.errorMessage.collectLatest { err ->
